@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Badge from "@mui/material/Badge";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 
 function Navigation() {
   const [isSearchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
 
   const toggleSearch = () => {
@@ -14,6 +17,47 @@ function Navigation() {
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
   };
+
+  // Fetch movies based on search query
+  useEffect(() => {
+    const fetchMovies = async () => {
+      // Trim the search query to remove extra spaces
+      const trimmedQuery = searchQuery.trim();
+  
+      if (trimmedQuery.length === 0) {
+        setMovies([]);
+        return;
+      }
+  
+      setIsLoading(true);
+  
+      try {
+        // Encode the query to handle spaces and special characters
+        const encodedQuery = encodeURIComponent(trimmedQuery);
+        const response = await fetch(
+          `https://yts.mx/api/v2/list_movies.json?query_term=${encodedQuery}&limit=10&minimum_rating=6&order_by=desc`
+        );
+        const data = await response.json();
+  
+        if (data.status === "ok" && data.data.movies) {
+          setMovies(data.data.movies);
+        } else {
+          setMovies([]);
+        }
+      } catch (error) {
+        console.error("Error fetching movies:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    // Debounce fetch
+    const timeoutId = setTimeout(() => {
+      fetchMovies();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   return (
     <nav className="card flex justify-between items-center px-8 py-4 bg-opacity-90 shadow-lg fixed top-0 left-0 w-full z-50">
@@ -59,17 +103,43 @@ function Navigation() {
 
         {/* Animated Search Input */}
         <div
-          className={`relative transition-all duration-500 ${
-            isSearchVisible ? "w-48 opacity-100" : "w-0 opacity-0"
+          className={`transition-all duration-500 ${
+            isSearchVisible ? "w-64 opacity-100" : "w-0 opacity-0"
           } overflow-hidden bg-gray-700 rounded-full`}
         >
           <input
             type="text"
             placeholder="Search..."
-            className={`transition-all duration-500 px-4 py-2 w-full text-white bg-gray-700 rounded-full outline-none focus:ring-2 ring-blue-500 ${
-              isSearchVisible ? "visible" : "hidden"
-            }`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="relative transition-all duration-500 px-4 py-2 w-full text-white bg-gray-700 rounded-full outline-none focus:ring-2 ring-blue-500"
           />
+          {/* Dropdown for Search Results */}
+          {isSearchVisible && searchQuery && (
+            <div className="absolute top-[5rem] bg-gray-800 text-white w-64 max-h-80 overflow-y-auto shadow-lg rounded-lg z-50 custom-scrollbar">
+              {isLoading ? (
+                <p className="text-center py-2">Loading...</p>
+              ) : movies.length > 0 ? (
+                movies.map((movie) => (
+                  <div
+                    key={movie.id}
+                    className="flex items-center p-2 hover:bg-gray-700 cursor-pointer"
+                  >
+                    <img
+                      src={movie.medium_cover_image}
+                      alt={movie.title}
+                      className="w-12 h-16 object-cover rounded-md mr-4"
+                    />
+                    <div>
+                      <h4 className="font-bold text-sm">{movie.title}</h4>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-2">No movies found</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -147,38 +217,64 @@ function Navigation() {
           </a>
 
           {/* Search Button */}
-          <div className="flex items-center space-x-2">
-            <button onClick={toggleSearch} className="focus:outline-none">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-white"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
-            <div
-              className={`relative transition-all duration-500 ${
-                isSearchVisible ? "w-48 opacity-100" : "w-0 opacity-0"
-              } overflow-hidden bg-gray-700 rounded-full`}
+          <button onClick={toggleSearch} className="focus:outline-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
             >
-              <input
-                type="text"
-                placeholder="Search..."
-                className={`transition-all duration-500 px-4 py-2 w-full text-white bg-gray-700 rounded-full outline-none focus:ring-2 ring-blue-500 ${
-                  isSearchVisible ? "visible" : "hidden"
-                }`}
-              />
-            </div>
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </button>
+
+          {/* Animated Search Input */}
+          <div
+            className={`relative transition-all duration-500 ${
+              isSearchVisible ? "w-48 opacity-100" : "w-0 opacity-0"
+            } overflow-hidden bg-gray-700 rounded-full`}
+          >
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="transition-all duration-500 px-4 py-2 w-full text-white bg-gray-700 rounded-full outline-none focus:ring-2 ring-blue-500"
+            />
           </div>
+          {/* Dropdown for Search Results */}
+          {isSearchVisible && searchQuery && (
+            <div className="absolute top-52 bg-gray-800 text-white w-64 max-h-80 overflow-y-auto shadow-lg rounded-lg z-50">
+              {isLoading ? (
+                <p className="text-center py-2">Loading...</p>
+              ) : movies.length > 0 ? (
+                movies.map((movie) => (
+                  <div
+                    key={movie.id}
+                    className="flex items-center p-2 hover:bg-gray-700 cursor-pointer"
+                  >
+                    <img
+                      src={movie.medium_cover_image}
+                      alt={movie.title}
+                      className="w-12 h-16 object-cover rounded-md mr-4"
+                    />
+                    <div>
+                      <h4 className="font-bold text-sm">{movie.title}</h4>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-2">No movies found</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </nav>

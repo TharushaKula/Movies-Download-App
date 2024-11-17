@@ -1,9 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 function SectionSlider() {
   const [activeSection, setActiveSection] = useState("Trending");
+  const [trendingMovies, setTrendingMovies] = useState([]);
+
+  // Fetch trending movies from the API
+  const fetchTrendingMovies = async () => {
+    try {
+      const response = await fetch(
+        "https://yts.mx/api/v2/list_movies.json?sort_by=download_count&limit=6"
+      );
+      const data = await response.json();
+      if (data.data.movies) {
+        setTrendingMovies(data.data.movies);
+      }
+    } catch (error) {
+      console.error("Error fetching trending movies:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === "Trending") {
+      fetchTrendingMovies();
+    }
+  }, [activeSection]);
 
   // Animation variants for smooth transitions
   const variants = {
@@ -11,27 +33,24 @@ function SectionSlider() {
     visible: { opacity: 1, x: 0, transition: { duration: 0.8 } },
     exit: { opacity: 0, x: 200, transition: { duration: 0.6 } },
   };
+
   return (
     <section className="mx-5 lg:mx-48 mb-28 mt-32">
       {/* Navigation */}
       <ul className="flex text-white space-x-10 text-lg font-semibold pl-3 pb-5">
-        {[
-          "Trending",
-          "Recommendations",
-          "Bookmarks",
-          "Discover",
-          "HDcompact",
-        ].map((section) => (
-          <li
-            key={section}
-            className={`cursor-pointer ${
-              activeSection === section ? "text-yellow-500" : ""
-            }`}
-            onClick={() => setActiveSection(section)}
-          >
-            {section}
-          </li>
-        ))}
+        {["Trending", "Recommendations", "Bookmarks", "Discover", "HDcompact"].map(
+          (section) => (
+            <li
+              key={section}
+              className={`cursor-pointer ${
+                activeSection === section ? "text-yellow-500" : ""
+              }`}
+              onClick={() => setActiveSection(section)}
+            >
+              {section}
+            </li>
+          )
+        )}
       </ul>
 
       {/* Trending Section */}
@@ -47,22 +66,20 @@ function SectionSlider() {
             <p className="text-white text-3xl lg:text-5xl font-bold">
               Trending Now: Must-Watch Movies
             </p>
-            <p className="text-white text-lg w-full lg:w-[400px]">
+            <p className="text-white pb-3 text-lg w-full lg:w-[400px]">
               Discover the latest and greatest movies that are taking the world
               by storm. These must-watch films are the talk of the town!
             </p>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {Array(6)
-                .fill(0)
-                .map((_, i) => (
-                  <div className="h-[200px] rounded-xl" key={i}>
-                    <img
-                      className="object-cover rounded-xl"
-                      src="https://yts.mx/assets/images/movies/spider_man_lotus_2023/large-cover.jpg"
-                      alt="Movie cover"
-                    />
-                  </div>
-                ))}
+              {trendingMovies.map((movie) => (
+                <div className="h-[200px] rounded-xl" key={movie.id}>
+                  <img
+                    className="object-cover rounded-xl"
+                    src={movie.medium_cover_image}
+                    alt={movie.title}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </motion.div>
@@ -77,7 +94,7 @@ function SectionSlider() {
           animate="visible"
           exit="exit"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 pt-14 mx-5 lg:mx-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 pt-14 mx-5 lg:mx-16">
             <div>
               <img src="/assets/img/reco.png" alt="Recommendations" />
             </div>
@@ -106,7 +123,7 @@ function SectionSlider() {
           animate="visible"
           exit="exit"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 pt-5 mx-5 lg:mx-16">
+           <div className="grid grid-cols-1 lg:grid-cols-2 pt-5 mx-5 lg:mx-16">
             <div className="flex flex-col justify-center items-start">
               <p className="text-white text-5xl font-bold pb-6">
                 Saved for Later: Your Personal Movie Library
@@ -140,7 +157,7 @@ function SectionSlider() {
           animate="visible"
           exit="exit"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 pt-20 mx-5 lg:mx-16 gap-5">
+           <div className="grid grid-cols-1 lg:grid-cols-2 pt-20 mx-5 lg:mx-16 gap-5">
             <div className="flex">
               <img
                 className="rounded-2xl"
@@ -173,7 +190,7 @@ function SectionSlider() {
           animate="visible"
           exit="exit"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 pt-14 mx-5 lg:mx-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 pt-14 mx-5 lg:mx-16">
             <div className="flex flex-col justify-center items-start">
               <p className="text-white text-5xl font-bold pb-6">
                 HDcompact: Maximum Quality, Minimum Size
